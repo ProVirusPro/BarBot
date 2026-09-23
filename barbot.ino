@@ -1014,7 +1014,7 @@ void setup() {
 
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
-  tft.begin();
+  tft.begin(1000000);  // SPI a 1 MHz (rallentato per level shifter HW-221)
 
   // Leggi ID display via SPI
   uint8_t id = tft.readcommand8(0xD3, 3);  // ILI9341 restituisce 0x41 al byte 3
