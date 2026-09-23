@@ -1015,6 +1015,21 @@ void setup() {
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
   tft.begin();
+
+  // Leggi ID display via SPI
+  uint8_t id = tft.readcommand8(0xD3, 3);  // ILI9341 restituisce 0x41 al byte 3
+  Serial.print("Display ID: 0x");
+  Serial.println(id, HEX);
+  if (id == 0x41) {
+    Serial.println("ILI9341 rilevato OK");
+  } else if (id == 0x00 || id == 0xFF) {
+    Serial.println("ERRORE: display non collegato o SPI non funzionante!");
+  } else {
+    Serial.print("Display sconosciuto (atteso 0x41, letto 0x");
+    Serial.print(id, HEX);
+    Serial.println(")");
+  }
+
   tft.setRotation(0);          // PORTRAIT 240×320
   tft.fillScreen(C_BG);
 
