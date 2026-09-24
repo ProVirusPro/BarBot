@@ -61,11 +61,11 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 
 #if USE_TOUCH
   XPT2046_Touchscreen ts(TOUCH_CS);  // senza IRQ, usa polling
-  // Calibrazione touch grezza (regola per il tuo pannello)
-  #define TX_MIN 200
-  #define TX_MAX 3800
-  #define TY_MIN 200
-  #define TY_MAX 3800
+  // Calibrazione touch (valori dal pannello reale)
+  #define TX_MIN 550
+  #define TX_MAX 3700
+  #define TY_MIN 530
+  #define TY_MAX 3750
 #endif
 
 // ═════════════════════════════════════════════════════════════
@@ -339,8 +339,8 @@ bool getTouch(int &x, int &y) {
   if (millis() - lastInput < DEBOUNCE) return false;
   lastInput = millis();
   TS_Point p = ts.getPoint();
-  x = map(p.x, TX_MIN, TX_MAX, 0, SW);
-  y = map(p.y, TY_MIN, TY_MAX, 0, SH);
+  x = map(p.x, TX_MAX, TX_MIN, 0, SW);   // X invertito
+  y = map(p.y, TY_MAX, TY_MIN, 0, SH);   // Y invertito
   x = constrain(x, 0, SW - 1);
   y = constrain(y, 0, SH - 1);
   return true;
