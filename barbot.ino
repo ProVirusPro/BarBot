@@ -60,7 +60,7 @@ const uint8_t PIN_LED[6]  = {30, 31, 32, 33, 34, 35};
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 
 #if USE_TOUCH
-  XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
+  XPT2046_Touchscreen ts(TOUCH_CS);  // senza IRQ, usa polling
   // Calibrazione touch grezza (regola per il tuo pannello)
   #define TX_MIN 200
   #define TX_MAX 3800
@@ -339,10 +339,15 @@ bool getTouch(int &x, int &y) {
   if (millis() - lastInput < DEBOUNCE) return false;
   lastInput = millis();
   TS_Point p = ts.getPoint();
+  Serial.print("Touch RAW: x="); Serial.print(p.x);
+  Serial.print(" y="); Serial.print(p.y);
+  Serial.print(" z="); Serial.println(p.z);
   x = map(p.x, TX_MIN, TX_MAX, 0, SW);
   y = map(p.y, TY_MIN, TY_MAX, 0, SH);
   x = constrain(x, 0, SW - 1);
   y = constrain(y, 0, SH - 1);
+  Serial.print("Touch MAP: x="); Serial.print(x);
+  Serial.print(" y="); Serial.println(y);
   return true;
 #else
   return false;
@@ -1014,7 +1019,7 @@ void setup() {
 
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
-  tft.begin(1000000);  // SPI a 1 MHz (rallentato per level shifter HW-221)
+  tft.begin(8000000);  // SPI a 8 MHz (rallentato per level shifter HW-221)
 
   // Leggi ID display via SPI
   uint8_t id = tft.readcommand8(0xD3, 3);  // ILI9341 restituisce 0x41 al byte 3
@@ -1036,6 +1041,25 @@ void setup() {
   #if USE_TOUCH
     ts.begin();
     ts.setRotation(0);
+
+    // Test touch: prova a leggere per 3 secondi
+    Serial.println("Touch test: tocca lo schermo entro 3 secondi...");
+    unsigned long tEnd = millis() + 3000;
+    bool found = false;
+    while (millis() < tEnd) {
+      if (ts.touched()) {
+        TS_Point p = ts.getPoint();
+        Serial.print("Touch OK! RAW x="); Serial.print(p.x);
+        Serial.print(" y="); Serial.print(p.y);
+        Serial.print(" z="); Serial.println(p.z);
+        found = true;
+        break;
+      }
+      delay(50);
+    }
+    if (!found) {
+      Serial.println("Touch NON rilevato. Controlla cablaggio T_CS, T_DIN, T_DO, T_CLK");
+    }
   #endif
 
   loadEE();
