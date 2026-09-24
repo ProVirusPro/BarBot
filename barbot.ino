@@ -339,15 +339,10 @@ bool getTouch(int &x, int &y) {
   if (millis() - lastInput < DEBOUNCE) return false;
   lastInput = millis();
   TS_Point p = ts.getPoint();
-  Serial.print("Touch RAW: x="); Serial.print(p.x);
-  Serial.print(" y="); Serial.print(p.y);
-  Serial.print(" z="); Serial.println(p.z);
   x = map(p.x, TX_MIN, TX_MAX, 0, SW);
   y = map(p.y, TY_MIN, TY_MAX, 0, SH);
   x = constrain(x, 0, SW - 1);
   y = constrain(y, 0, SH - 1);
-  Serial.print("Touch MAP: x="); Serial.print(x);
-  Serial.print(" y="); Serial.println(y);
   return true;
 #else
   return false;
@@ -1019,47 +1014,13 @@ void setup() {
 
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
-  tft.begin(8000000);  // SPI a 8 MHz (rallentato per level shifter HW-221)
-
-  // Leggi ID display via SPI
-  uint8_t id = tft.readcommand8(0xD3, 3);  // ILI9341 restituisce 0x41 al byte 3
-  Serial.print("Display ID: 0x");
-  Serial.println(id, HEX);
-  if (id == 0x41) {
-    Serial.println("ILI9341 rilevato OK");
-  } else if (id == 0x00 || id == 0xFF) {
-    Serial.println("ERRORE: display non collegato o SPI non funzionante!");
-  } else {
-    Serial.print("Display sconosciuto (atteso 0x41, letto 0x");
-    Serial.print(id, HEX);
-    Serial.println(")");
-  }
-
+  tft.begin(8000000);  // SPI a 8 MHz (per level shifter HW-221)
   tft.setRotation(0);          // PORTRAIT 240×320
   tft.fillScreen(C_BG);
 
   #if USE_TOUCH
     ts.begin();
     ts.setRotation(0);
-
-    // Test touch: prova a leggere per 3 secondi
-    Serial.println("Touch test: tocca lo schermo entro 3 secondi...");
-    unsigned long tEnd = millis() + 3000;
-    bool found = false;
-    while (millis() < tEnd) {
-      if (ts.touched()) {
-        TS_Point p = ts.getPoint();
-        Serial.print("Touch OK! RAW x="); Serial.print(p.x);
-        Serial.print(" y="); Serial.print(p.y);
-        Serial.print(" z="); Serial.println(p.z);
-        found = true;
-        break;
-      }
-      delay(50);
-    }
-    if (!found) {
-      Serial.println("Touch NON rilevato. Controlla cablaggio T_CS, T_DIN, T_DO, T_CLK");
-    }
   #endif
 
   loadEE();
