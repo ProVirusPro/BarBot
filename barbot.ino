@@ -94,7 +94,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define EE_MAGIC      0
 #define EE_BOTTLES    1          // 6 byte
 #define EE_CALIB     10          // 6×4 byte (float)
-#define EE_MAGIC_VAL  0xBB
+#define EE_MAGIC_VAL  0xBC
 
 // ═════════════════════════════════════════════════════════════
 //  COSTANTI
@@ -103,10 +103,15 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define NUM_POS 6
 #define DEFAULT_ML_S 1.5f       // 90 ml/min @12 V
 
+#define TUBE_ID_MM       4      // diametro interno tubo silicone (mm)
+#define TUBE_BOTTLE_CM  50      // lunghezza bottiglia → pompa (cm)
+#define TUBE_OUTPUT_CM  40      // lunghezza pompa → uscita (cm)
+
 // ═════════════════════════════════════════════════════════════
 //  DATABASE BOTTIGLIE (alfabetico, PROGMEM)
 // ═════════════════════════════════════════════════════════════
 
+const char bAQ[] PROGMEM = "Acqua";
 const char b00[] PROGMEM = "Amaretto";
 const char b01[] PROGMEM = "Aperol";
 const char b02[] PROGMEM = "Bourbon";
@@ -134,10 +139,10 @@ const char b23[] PROGMEM = "Vermouth Rosso";
 const char b24[] PROGMEM = "Vodka";
 const char b25[] PROGMEM = "Whiskey";
 
-#define NUM_BOTTLES 26
+#define NUM_BOTTLES 27
 
 const char* const BNAME[NUM_BOTTLES] PROGMEM = {
-  b00,b01,b02,b03,b04,b05,b06,b07,b08,b09,
+  bAQ,b00,b01,b02,b03,b04,b05,b06,b07,b08,b09,
   b10,b11,b12,b13,b14,b15,b16,b17,b18,b19,
   b20,b21,b22,b23,b24,b25
 };
@@ -153,13 +158,13 @@ void bname(uint8_t i, char* buf, uint8_t mx = 18) {
 // ═════════════════════════════════════════════════════════════
 
 // Indici bottiglia:
-//  0 Amaretto     1 Aperol       2 Bourbon     3 Cachaca
-//  4 Campari      5 Cointreau    6 Gin         7 Grand Marnier
-//  8 Kahlua       9 Limoncello  10 Maraschino 11 Mezcal
-// 12 Prosecco    13 Rum Bianco  14 Rum Scuro  15 Sambuca
-// 16 Scir.Zucch. 17 Scotch      18 Succo Lime 19 Succo Limone
-// 20 Tequila     21 Triple Sec  22 Vermouth D 23 Vermouth R
-// 24 Vodka       25 Whiskey
+//  0 Acqua        1 Amaretto     2 Aperol       3 Bourbon
+//  4 Cachaca      5 Campari      6 Cointreau    7 Gin
+//  8 Grand Marnier 9 Kahlua    10 Limoncello  11 Maraschino
+// 12 Mezcal      13 Prosecco    14 Rum Bianco  15 Rum Scuro
+// 16 Sambuca     17 Scir.Zucch. 18 Scotch      19 Succo Lime
+// 20 Succo Limone 21 Tequila   22 Triple Sec  23 Vermouth D
+// 24 Vermouth R  25 Vodka       26 Whiskey
 
 struct Ingr { uint8_t bot; uint8_t ml; };
 
@@ -191,24 +196,24 @@ const char d17[] PROGMEM = "Whiskey Sour";
 #define NUM_DRINKS 18
 
 const Drink DRINKS[NUM_DRINKS] = {
-  {d00,2, {{4,30},{23,30}}},                          // Americano
-  {d01,3, {{2,30},{4,30},{23,30}}},                   // Boulevardier
-  {d02,3, {{3,60},{18,30},{16,15}}},                  // Caipirinha
-  {d03,3, {{24,40},{5,15},{18,15}}},                  // Cosmopolitan
-  {d04,3, {{13,60},{18,30},{16,15}}},                 // Daiquiri
-  {d05,3, {{24,40},{8,30},{16,10}}},                  // Espresso Martini
-  {d06,3, {{6,60},{18,30},{16,15}}},                  // Gimlet
-  {d07,5, {{24,15},{6,15},{13,15},{20,15},{21,15}}},  // Long Island
-  {d08,2, {{2,50},{23,20}}},                          // Manhattan
-  {d09,3, {{20,50},{5,20},{18,15}}},                  // Margarita
-  {d10,2, {{6,60},{22,10}}},                          // Martini Dry
-  {d11,3, {{11,60},{18,30},{16,15}}},                 // Mezcal Sour
-  {d12,3, {{13,45},{18,20},{16,15}}},                 // Mojito
-  {d13,3, {{6,30},{4,30},{23,30}}},                   // Negroni
-  {d14,2, {{2,60},{16,10}}},                          // Old Fashioned
-  {d15,3, {{2,40},{5,20},{19,20}}},                   // Sidecar
-  {d16,2, {{1,60},{12,90}}},                          // Spritz
-  {d17,3, {{2,50},{19,25},{16,15}}},                  // Whiskey Sour
+  {d00,2, {{5,30},{24,30}}},                          // Americano
+  {d01,3, {{3,30},{5,30},{24,30}}},                   // Boulevardier
+  {d02,3, {{4,60},{19,30},{17,15}}},                  // Caipirinha
+  {d03,3, {{25,40},{6,15},{19,15}}},                  // Cosmopolitan
+  {d04,3, {{14,60},{19,30},{17,15}}},                 // Daiquiri
+  {d05,3, {{25,40},{9,30},{17,10}}},                  // Espresso Martini
+  {d06,3, {{7,60},{19,30},{17,15}}},                  // Gimlet
+  {d07,5, {{25,15},{7,15},{14,15},{21,15},{22,15}}},  // Long Island
+  {d08,2, {{3,50},{24,20}}},                          // Manhattan
+  {d09,3, {{21,50},{6,20},{19,15}}},                  // Margarita
+  {d10,2, {{7,60},{23,10}}},                          // Martini Dry
+  {d11,3, {{12,60},{19,30},{17,15}}},                 // Mezcal Sour
+  {d12,3, {{14,45},{19,20},{17,15}}},                 // Mojito
+  {d13,3, {{7,30},{5,30},{24,30}}},                   // Negroni
+  {d14,2, {{3,60},{17,10}}},                          // Old Fashioned
+  {d15,3, {{3,40},{6,20},{20,20}}},                   // Sidecar
+  {d16,2, {{2,60},{13,90}}},                          // Spritz
+  {d17,3, {{3,50},{20,25},{17,15}}},                  // Whiskey Sour
 };
 
 void dname(uint8_t i, char* buf, uint8_t mx = 18) {
@@ -435,11 +440,11 @@ void showMain() {
   #if USE_TOUCH
     drawBtn(20,  95, 200, 50, "Setup Bottiglie");
     drawBtn(20, 160, 200, 50, "Drink");
-    drawBtn(20, 225, 200, 50, "Calibra Pompe");
+    drawBtn(20, 225, 200, 50, "Setup Pompe");
   #else
     drawBtn(20,  95, 200, 50, "Setup Bottiglie", C_BTN, cursor==0);
     drawBtn(20, 160, 200, 50, "Drink",           C_BTN, cursor==1);
-    drawBtn(20, 225, 200, 50, "Calibra Pompe",   C_BTN, cursor==2);
+    drawBtn(20, 225, 200, 50, "Setup Pompe",     C_BTN, cursor==2);
   #endif
 }
 
@@ -506,25 +511,17 @@ void showSelect() {
     int y = y0 + i * 26;
     bname(idx, buf);
 
-    bool used = false;
-    for (uint8_t p = 0; p < NUM_POS; p++)
-      if (p != (uint8_t)selPos && bottles[p] == idx) { used = true; break; }
-
-    uint16_t bg = used ? 0x18C3 : C_BTN;
     #if !USE_TOUCH
       int ci = (scroll == 0) ? i + 1 : i;
       bool s = (cursor == ci);
     #else
       bool s = false;
     #endif
-    tft.fillRoundRect(6, y, 228, 22, 3, s ? C_BTN_HL : bg);
+    tft.fillRoundRect(6, y, 228, 22, 3, s ? C_BTN_HL : C_BTN);
     tft.drawRoundRect(6, y, 228, 22, 3, s ? C_GRN : C_ACC);
     tft.setTextSize(1);
-    tft.setTextColor(used ? C_DIM : C_TXT);
+    tft.setTextColor(C_TXT);
     tft.setCursor(14, y + 6); tft.print(buf);
-    if (used) {
-      tft.setCursor(190, y + 6); tft.print("[usa]");
-    }
   }
 
   if (scroll > 0)
@@ -640,7 +637,7 @@ void updateBar(uint8_t pct, const char* ingr) {
 void showCalib() {
   scr = S_CALIB;
   tft.fillScreen(C_BG);
-  hdr("CALIBRAZIONE");
+  hdr("SETUP POMPE");
   backBtn();
 
   char buf[18];
@@ -661,6 +658,14 @@ void showCalib() {
     tft.setTextColor(C_DIM); tft.setCursor(140, y + 16);
     tft.print(cal[i], 2); tft.print(" ml/s");
   }
+
+  #if !USE_TOUCH
+    drawSm(6, 260, 112, 28, "Init Pompe", C_ACC, cursor == NUM_POS);
+    drawSm(122, 260, 112, 28, "Svuota Tubi", C_ACC, cursor == NUM_POS + 1);
+  #else
+    drawSm(6, 260, 112, 28, "Init Pompe", C_ACC);
+    drawSm(122, 260, 112, 28, "Svuota Tubi", C_ACC);
+  #endif
 }
 
 void showCalibP(uint8_t p) {
@@ -685,6 +690,96 @@ void showCalibP(uint8_t p) {
   drawBtn(125, 210, 105, 36, "- 0.05");
   drawBtn(30,  264, 180, 34, "SALVA", C_GRN);
 }
+
+// ═════════════════════════════════════════════════════════════
+//  INIT / SVUOTA TUBI
+// ═════════════════════════════════════════════════════════════
+
+float tubeVolumeMl(float lengthCm) {
+  float r = TUBE_ID_MM / 2.0f;
+  return 3.14159f * r * r * lengthCm * 10.0f / 1000.0f;
+}
+
+void runTubesProgress(const char* title, bool onlyAssigned) {
+  tft.fillScreen(C_BG);
+  hdr(title);
+
+  float vol = tubeVolumeMl(TUBE_BOTTLE_CM + TUBE_OUTPUT_CM);
+
+  unsigned long pMs[NUM_POS];
+  bool pAct[NUM_POS];
+  unsigned long maxMs = 0;
+  uint8_t nPumps = 0;
+
+  for (uint8_t i = 0; i < NUM_POS; i++) {
+    if (onlyAssigned && bottles[i] == 0xFF) {
+      pAct[i] = false;
+      continue;
+    }
+    pMs[i] = (unsigned long)(vol / cal[i] * 1000.0f);
+    pAct[i] = true;
+    if (pMs[i] > maxMs) maxMs = pMs[i];
+    pumpOn(i);
+    ledOn(i);
+    nPumps++;
+  }
+
+  if (nPumps == 0) {
+    tft.setTextSize(1); tft.setTextColor(C_DIM);
+    tft.setCursor(15, 100); tft.print("Nessuna pompa da attivare!");
+    delay(2000);
+    showCalib();
+    return;
+  }
+
+  tft.setTextSize(1); tft.setTextColor(C_DIM);
+  tft.setCursor(14, 44);
+  tft.print("Volume tubo: "); tft.print(vol, 1); tft.print(" ml");
+  tft.setCursor(14, 58);
+  tft.print("Pompe attive: "); tft.print(nPumps);
+  tft.setCursor(14, 72);
+  tft.print("Tempo: ~"); tft.print((int)(maxMs / 1000 + 1)); tft.print(" sec");
+
+  tft.drawRoundRect(14, 140, 212, 26, 4, C_ACC);
+
+  unsigned long t0 = millis();
+
+  while (millis() - t0 < maxMs) {
+    unsigned long elapsed = millis() - t0;
+
+    for (uint8_t i = 0; i < NUM_POS; i++) {
+      if (pAct[i] && elapsed >= pMs[i]) {
+        pumpOff(i);
+        pAct[i] = false;
+      }
+    }
+
+    uint8_t pct = (uint8_t)((uint32_t)elapsed * 100 / maxMs);
+    if (pct > 100) pct = 100;
+
+    int fw = map(pct, 0, 100, 0, 208);
+    tft.fillRoundRect(16, 142, fw, 22, 3, C_BAR);
+
+    tft.fillRect(80, 178, 80, 20, C_BG);
+    tft.setTextSize(2); tft.setTextColor(C_TXT);
+    tft.setCursor(pct < 10 ? 104 : (pct < 100 ? 96 : 84), 178);
+    tft.print(pct); tft.print('%');
+
+    delay(150);
+  }
+
+  pumpsOff();
+  ledsBase();
+
+  tft.fillRect(80, 178, 80, 20, C_BG);
+  tft.setTextSize(2); tft.setTextColor(C_GRN);
+  tft.setCursor(56, 178); tft.print("FATTO!");
+  delay(2000);
+  showCalib();
+}
+
+void primeTubes() { runTubesProgress("INIT POMPE", true); }
+void flushTubes() { runTubesProgress("SVUOTA TUBI", false); }
 
 // ═════════════════════════════════════════════════════════════
 //  LOGICA EROGAZIONE
@@ -818,10 +913,6 @@ void handleTouch() {
       int idx = scroll + i;
       if (idx >= NUM_BOTTLES) break;
       if (hit(tx,ty, 6, y0 + i*26, 228, 22)) {
-        for (uint8_t p = 0; p < NUM_POS; p++) {
-          if (p != (uint8_t)selPos && bottles[p] == (uint8_t)idx)
-            bottles[p] = 0xFF;
-        }
         bottles[selPos] = (uint8_t)idx;
         ledsBase(); showSetup(); return;
       }
@@ -868,6 +959,8 @@ void handleTouch() {
         calPump = i; showCalibP(i); return;
       }
     }
+    if (hit(tx,ty,6,260,112,28))   { primeTubes(); return; }
+    if (hit(tx,ty,122,260,112,28)) { flushTubes(); return; }
     break;
 
   case S_CALIB_P:
@@ -947,8 +1040,6 @@ void handleButtons() {
       } else {
         int idx = scroll + ((scroll==0) ? cursor-1 : cursor);
         if (idx < NUM_BOTTLES) {
-          for (uint8_t p=0; p<NUM_POS; p++)
-            if (p!=(uint8_t)selPos && bottles[p]==(uint8_t)idx) bottles[p]=0xFF;
           bottles[selPos]=(uint8_t)idx;
           ledsBase(); cursor=selPos; maxCursor=NUM_POS; showSetup();
         }
@@ -977,11 +1068,17 @@ void handleButtons() {
     if (e == BT_UP || e == BT_DOWN) { scroll=0; cursor=0; showDrinks(); }
     break;
 
-  case S_CALIB:
-    if (e == BT_UP)   { cursor=(cursor+NUM_POS-1)%NUM_POS; showCalib(); }
-    if (e == BT_DOWN) { cursor=(cursor+1)%NUM_POS;         showCalib(); }
-    if (e == BT_OK)   { calPump=cursor; showCalibP(cursor); }
+  case S_CALIB: {
+    uint8_t total = NUM_POS + 2;
+    if (e == BT_UP)   { cursor=(cursor+total-1)%total; showCalib(); }
+    if (e == BT_DOWN) { cursor=(cursor+1)%total;       showCalib(); }
+    if (e == BT_OK) {
+      if (cursor < NUM_POS)      { calPump=cursor; showCalibP(cursor); }
+      else if (cursor == NUM_POS) primeTubes();
+      else                        flushTubes();
+    }
     break;
+  }
 
   case S_CALIB_P:
     if (e == BT_UP)   { cal[calPump]+=0.05f; showCalibP(calPump); }
