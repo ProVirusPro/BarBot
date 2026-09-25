@@ -103,7 +103,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define NUM_POS 6
 #define DEFAULT_ML_S 1.5f       // 90 ml/min @12 V
 
-#define TUBE_ID_MM       4      // diametro interno tubo silicone (mm)
+#define TUBE_ID_MM       2.5f   // diametro interno tubo silicone (mm)
 #define TUBE_BOTTLE_CM  50      // lunghezza bottiglia → pompa (cm)
 #define TUBE_OUTPUT_CM  40      // lunghezza pompa → uscita (cm)
 
@@ -700,11 +700,11 @@ float tubeVolumeMl(float lengthCm) {
   return 3.14159f * r * r * lengthCm * 10.0f / 1000.0f;
 }
 
-void runTubesProgress(const char* title, bool onlyAssigned) {
+void runTubesProgress(const char* title, bool onlyAssigned, float lengthCm) {
   tft.fillScreen(C_BG);
   hdr(title);
 
-  float vol = tubeVolumeMl(TUBE_BOTTLE_CM + TUBE_OUTPUT_CM);
+  float vol = tubeVolumeMl(lengthCm);
 
   unsigned long pMs[NUM_POS];
   bool pAct[NUM_POS];
@@ -778,8 +778,8 @@ void runTubesProgress(const char* title, bool onlyAssigned) {
   showCalib();
 }
 
-void primeTubes() { runTubesProgress("INIT POMPE", true); }
-void flushTubes() { runTubesProgress("SVUOTA TUBI", false); }
+void primeTubes() { runTubesProgress("INIT POMPE", true, TUBE_BOTTLE_CM); }
+void flushTubes() { runTubesProgress("SVUOTA TUBI", false, TUBE_BOTTLE_CM + TUBE_OUTPUT_CM); }
 
 // ═════════════════════════════════════════════════════════════
 //  LOGICA EROGAZIONE
