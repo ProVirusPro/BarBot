@@ -574,6 +574,7 @@ void showDetail(uint8_t d) {
   scr = S_DETAIL;
   tft.fillScreen(C_BG);
   char buf[18]; dname(d, buf);
+  buf[15] = 0;
   hdr(buf);
   backBtn();
 
