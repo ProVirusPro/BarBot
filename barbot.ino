@@ -635,18 +635,18 @@ void showDetail(uint8_t d) {
 }
 
 // ─── Citazioni Drink (PROGMEM) ───────────────────────────────
-const char q00[] PROGMEM = "La vita e' breve: bevi bene!";
-const char q01[] PROGMEM = "Shaken, not stirred. -007";
-const char q02[] PROGMEM = "In vino veritas, in cocktail amor";
-const char q03[] PROGMEM = "Ogni cocktail ha la sua anima";
-const char q04[] PROGMEM = "La pazienza e' virtu' del barman";
-const char q05[] PROGMEM = "Dosi giuste, sera perfetta";
-const char q06[] PROGMEM = "Un buon drink cura quasi tutto";
-const char q07[] PROGMEM = "La magia e' nella miscelazione";
-const char q08[] PROGMEM = "La perfezione richiede tempo";
-const char q09[] PROGMEM = "Non contare i drink: gustali!";
-const char q10[] PROGMEM = "La felicita' si puo' mixare";
-const char q11[] PROGMEM = "Bevi il momento, gusta l'istante";
+const char q00[] PROGMEM = "Bevi bene, vivi bene";
+const char q01[] PROGMEM = "Shaken, not stirred";
+const char q02[] PROGMEM = "In vino veritas";
+const char q03[] PROGMEM = "Ogni drink ha un'anima";
+const char q04[] PROGMEM = "Pazienza e passione";
+const char q05[] PROGMEM = "Dosi giuste, magia!";
+const char q06[] PROGMEM = "Il drink cura tutto";
+const char q07[] PROGMEM = "La magia e' nel mix";
+const char q08[] PROGMEM = "Tempo e perfezione";
+const char q09[] PROGMEM = "Gusta ogni goccia!";
+const char q10[] PROGMEM = "Mix di felicita'";
+const char q11[] PROGMEM = "Bevi il momento!";
 
 #define NUM_QUOTES 12
 const char* const QUOTES[NUM_QUOTES] PROGMEM = {
@@ -656,67 +656,72 @@ const char* const QUOTES[NUM_QUOTES] PROGMEM = {
 // ─── Icone Decorative (rotazione) ────────────────────────────
 void drawDispIcon(uint8_t idx, int x, int y) {
   tft.fillRect(x, y, 14, 16, C_BG);
-  uint16_t c = C_HDR;
   switch (idx % 6) {
-    case 0: // bicchiere martini
+    case 0: { // bicchiere martini (cyan)
+      uint16_t c = 0x07FF;
       tft.drawLine(x+1, y+1, x+7, y+9, c);
       tft.drawLine(x+13, y+1, x+7, y+9, c);
       tft.drawFastHLine(x, y+1, 14, c);
       tft.drawFastVLine(x+7, y+9, 5, c);
       tft.drawFastHLine(x+3, y+14, 8, c);
-      break;
-    case 1: // stella
+      break; }
+    case 1: { // stella (giallo)
+      uint16_t c = 0xFFE0;
       tft.drawLine(x+7, y, x+7, y+14, c);
       tft.drawLine(x+1, y+7, x+13, y+7, c);
       tft.drawLine(x+3, y+2, x+11, y+12, c);
       tft.drawLine(x+3, y+12, x+11, y+2, c);
-      break;
-    case 2: // cuore
+      break; }
+    case 2: { // cuore (rosso)
+      uint16_t c = 0xF800;
       tft.fillCircle(x+4, y+5, 3, c);
       tft.fillCircle(x+10, y+5, 3, c);
       tft.fillTriangle(x+1, y+6, x+13, y+6, x+7, y+14, c);
-      break;
-    case 3: // nota musicale
+      break; }
+    case 3: { // nota musicale (magenta)
+      uint16_t c = 0xF81F;
       tft.fillCircle(x+4, y+11, 3, c);
       tft.drawFastVLine(x+7, y+1, 11, c);
       tft.drawFastHLine(x+7, y+1, 5, c);
       tft.drawFastHLine(x+7, y+3, 5, c);
-      break;
-    case 4: // goccia
+      break; }
+    case 4: { // goccia (blu)
+      uint16_t c = 0x045F;
       tft.fillCircle(x+7, y+10, 4, c);
       tft.fillTriangle(x+3, y+9, x+11, y+9, x+7, y+1, c);
-      break;
-    case 5: // diamante
+      break; }
+    case 5: { // diamante (azzurro)
+      uint16_t c = 0xBFFF;
       tft.fillTriangle(x+7, y, x+1, y+7, x+13, y+7, c);
       tft.fillTriangle(x+7, y+14, x+1, y+7, x+13, y+7, c);
-      break;
+      break; }
   }
 }
 
 void drawQuote(uint8_t idx) {
-  char raw[36];
-  strncpy_P(raw, (PGM_P)pgm_read_ptr(&QUOTES[idx % NUM_QUOTES]), 35);
-  raw[35] = 0;
-  char full[40];
-  snprintf(full, 39, "\"%s\"", raw);
+  char raw[26];
+  strncpy_P(raw, (PGM_P)pgm_read_ptr(&QUOTES[idx % NUM_QUOTES]), 25);
+  raw[25] = 0;
+  char full[30];
+  snprintf(full, 29, "\"%s\"", raw);
 
-  tft.fillRect(0, 224, SW, 46, C_BG);
-  tft.setTextSize(2); tft.setTextColor(C_DIM);
+  tft.fillRect(0, 220, SW, 56, C_BG);
+  tft.setTextSize(3); tft.setTextColor(C_ACC);
   int16_t bx, by; uint16_t tw, th;
 
   int len = strlen(full);
-  if (len <= 19) {
+  if (len <= 13) {
     tft.getTextBounds(full, 0, 0, &bx, &by, &tw, &th);
-    tft.setCursor((SW - tw) / 2, 240);
+    tft.setCursor((SW - tw) / 2, 236);
     tft.print(full);
   } else {
-    int sp = 18;
+    int sp = 12;
     while (sp > 1 && full[sp] != ' ') sp--;
-    if (sp <= 1) sp = 18;
-    char line1[22];
+    if (sp <= 1) sp = 12;
+    char line1[16];
     strncpy(line1, full, sp); line1[sp] = 0;
     tft.getTextBounds(line1, 0, 0, &bx, &by, &tw, &th);
-    tft.setCursor((SW - tw) / 2, 228);
+    tft.setCursor((SW - tw) / 2, 222);
     tft.print(line1);
     const char* line2 = full + sp + 1;
     tft.getTextBounds(line2, 0, 0, &bx, &by, &tw, &th);
@@ -978,6 +983,28 @@ void runTubesProgress(const char* title, bool onlyAssigned, float lengthCm) {
 void primeTubes() { runTubesProgress("INIT POMPE", true, TUBE_BOTTLE_CM); }
 void flushTubes() { runTubesProgress("SVUOTA TUBI", false, TUBE_BOTTLE_CM + TUBE_OUTPUT_CM); }
 
+// ─── Fuochi d'artificio ─────────────────────────────────────
+void fireworks(unsigned long durationMs) {
+  const uint16_t fwCol[] = {0xF800, C_GRN, 0xFFE0, 0xF81F, C_HDR, 0x07FF};
+  unsigned long t0 = millis();
+  while (millis() - t0 < durationMs) {
+    int cx = 20 + random(200);
+    int cy = 140 + random(140);
+    uint16_t col = fwCol[random(6)];
+    for (int r = 2; r <= 14; r += 3) {
+      tft.drawPixel(cx, cy - r, col);
+      tft.drawPixel(cx, cy + r, col);
+      tft.drawPixel(cx - r, cy, col);
+      tft.drawPixel(cx + r, cy, col);
+      tft.drawPixel(cx - r * 7 / 10, cy - r * 7 / 10, col);
+      tft.drawPixel(cx + r * 7 / 10, cy - r * 7 / 10, col);
+      tft.drawPixel(cx - r * 7 / 10, cy + r * 7 / 10, col);
+      tft.drawPixel(cx + r * 7 / 10, cy + r * 7 / 10, col);
+    }
+    delay(120);
+  }
+}
+
 // ═════════════════════════════════════════════════════════════
 //  LOGICA EROGAZIONE
 // ═════════════════════════════════════════════════════════════
@@ -1059,15 +1086,18 @@ void dispense(uint8_t d) {
   updateBar(100, "Completato!");
   ledChase(3);
 
-  tft.fillRect(0, 44, SW, 26, C_BG);
+  tft.fillRect(0, 44, SW, 276, C_BG);
   tft.setTextSize(3); tft.setTextColor(C_GRN);
-  tft.setCursor(36, 48); tft.print("PRONTO!");
+  int16_t bx2, by2; uint16_t tw2, th2;
+  tft.getTextBounds("PRONTO!", 0, 0, &bx2, &by2, &tw2, &th2);
+  tft.setCursor((SW - tw2) / 2, 48); tft.print("PRONTO!");
 
-  tft.fillRect(0, 240, SW, 40, C_BG);
-  tft.setTextSize(1); tft.setTextColor(C_ACC);
-  tft.setCursor(72, 252); tft.print("Cin cin!");
+  tft.setTextSize(2); tft.setTextColor(C_ACC);
+  tft.getTextBounds("Cin cin!", 0, 0, &bx2, &by2, &tw2, &th2);
+  tft.setCursor((SW - tw2) / 2, 80); tft.print("Cin cin!");
 
-  delay(4000);
+  fireworks(3500);
+  delay(500);
   scroll = 0;
   showDrinks();
 }
