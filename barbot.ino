@@ -252,6 +252,8 @@ Scr scr = S_MAIN;
 bool ledManual[NUM_POS];
 int  beerOfs = 0;
 unsigned long lastBeerAnim = 0;
+uint8_t  curQuote = 0;
+unsigned long lastQuoteTime = 0;
 
 unsigned long lastInput = 0;
 #define DEBOUNCE 300
@@ -629,28 +631,86 @@ void showDetail(uint8_t d) {
   drawBtn(20, 272, 200, 38, "PREPARA", C_GRN);
 }
 
+// ─── Citazioni Drink (PROGMEM) ───────────────────────────────
+const char q00[] PROGMEM = "La vita e' breve: bevi bene!";
+const char q01[] PROGMEM = "Shaken, not stirred. -007";
+const char q02[] PROGMEM = "In vino veritas, in cocktail amor";
+const char q03[] PROGMEM = "Ogni cocktail ha la sua anima";
+const char q04[] PROGMEM = "La pazienza e' virtu' del barman";
+const char q05[] PROGMEM = "Dosi giuste, sera perfetta";
+const char q06[] PROGMEM = "Un buon drink cura quasi tutto";
+const char q07[] PROGMEM = "La magia e' nella miscelazione";
+const char q08[] PROGMEM = "La perfezione richiede tempo";
+const char q09[] PROGMEM = "Non contare i drink: gustali!";
+const char q10[] PROGMEM = "La felicita' si puo' mixare";
+const char q11[] PROGMEM = "Bevi il momento, gusta l'istante";
+
+#define NUM_QUOTES 12
+const char* const QUOTES[NUM_QUOTES] PROGMEM = {
+  q00,q01,q02,q03,q04,q05,q06,q07,q08,q09,q10,q11
+};
+
+void drawQuote(uint8_t idx) {
+  char raw[36];
+  strncpy_P(raw, (PGM_P)pgm_read_ptr(&QUOTES[idx % NUM_QUOTES]), 35);
+  raw[35] = 0;
+  char buf[40];
+  buf[0] = '"'; strcpy(buf + 1, raw);
+  uint8_t l = strlen(buf); buf[l] = '"'; buf[l + 1] = 0;
+
+  tft.fillRect(0, 240, SW, 30, C_BG);
+  tft.setTextSize(1); tft.setTextColor(C_DIM);
+  int16_t bx, by; uint16_t tw, th;
+  tft.getTextBounds(buf, 0, 0, &bx, &by, &tw, &th);
+  tft.setCursor((SW - tw) / 2, 248);
+  tft.print(buf);
+}
+
 // ─── Schermata Erogazione ────────────────────────────────────
 void showDispensing(uint8_t d) {
   tft.fillScreen(C_BG);
   char buf[18]; dname(d, buf);
   hdr("PREPARAZIONE");
   tft.setTextSize(2); tft.setTextColor(C_HDR);
-  tft.setCursor(14, 52); tft.print(buf);
-  tft.drawRoundRect(14, 140, 212, 26, 4, C_ACC);
+  tft.setCursor(14, 48); tft.print(buf);
+
+  // barra moderna: sfondo scuro incassato + bordo teal
+  tft.fillRoundRect(14, 110, 212, 36, 8, 0x1082);
+  tft.drawRoundRect(14, 110, 212, 36, 8, C_ACC);
+  tft.drawRoundRect(15, 111, 210, 34, 7, 0x1863);
+
+  // citazione iniziale
+  curQuote = (uint8_t)(millis() % NUM_QUOTES);
+  lastQuoteTime = millis();
+  drawQuote(curQuote);
 }
 
 void updateBar(uint8_t pct, const char* ingr) {
-  int fw = map(pct, 0, 100, 0, 208);
-  tft.fillRoundRect(16, 142, fw, 22, 3, C_BAR);
+  int fw = map(pct, 0, 100, 0, 204);
 
-  tft.fillRect(80, 178, 80, 20, C_BG);
-  tft.setTextSize(2); tft.setTextColor(C_TXT);
-  tft.setCursor(pct < 10 ? 104 : (pct < 100 ? 96 : 84), 178);
-  tft.print(pct); tft.print('%');
+  // riempimento con effetto glossy
+  if (fw > 0) {
+    tft.fillRoundRect(17, 113, fw, 30, 6, C_BAR);
+    if (fw > 8) tft.fillRoundRect(19, 114, fw - 4, 8, 3, 0xFEA0);
+  }
 
-  tft.fillRect(14, 210, 220, 14, C_BG);
+  // percentuale grande centrata
+  tft.fillRect(60, 158, 120, 28, C_BG);
+  tft.setTextSize(3); tft.setTextColor(C_TXT);
+  int cx = (pct < 10) ? 96 : (pct < 100) ? 84 : 72;
+  tft.setCursor(cx, 160); tft.print(pct); tft.print('%');
+
+  // stato erogazione
+  tft.fillRect(14, 198, 220, 14, C_BG);
   tft.setTextSize(1); tft.setTextColor(C_DIM);
-  tft.setCursor(14, 212); tft.print("Erogando: "); tft.print(ingr);
+  tft.setCursor(14, 200); tft.print("Erogando: "); tft.print(ingr);
+
+  // rotazione citazioni ogni 4 sec
+  if (millis() - lastQuoteTime > 4000) {
+    lastQuoteTime = millis();
+    curQuote = (curQuote + 1) % NUM_QUOTES;
+    drawQuote(curQuote);
+  }
 }
 
 // ─── Calibrazione ────────────────────────────────────────────
@@ -928,8 +988,13 @@ void dispense(uint8_t d) {
   updateBar(100, "Completato!");
   ledChase(3);
 
+  tft.fillRect(0, 44, SW, 26, C_BG);
   tft.setTextSize(3); tft.setTextColor(C_GRN);
-  tft.setCursor(40, 52); tft.print("PRONTO!");
+  tft.setCursor(36, 48); tft.print("PRONTO!");
+
+  tft.fillRect(0, 240, SW, 40, C_BG);
+  tft.setTextSize(1); tft.setTextColor(C_ACC);
+  tft.setCursor(72, 252); tft.print("Cin cin!");
 
   delay(4000);
   scroll = 0;
