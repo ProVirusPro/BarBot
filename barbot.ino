@@ -82,6 +82,13 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define C_GRN     0x07E0
 #define C_RED     0xF800
 #define C_BAR     0xFD20   // barra progresso
+#define C_H_BOT   0x2D9F   // header setup bottiglie (blu teal)
+#define C_H_SEL   0x2E64   // header seleziona (verde)
+#define C_H_DRK   0xF81F   // header drink menu (magenta)
+#define C_H_MIX   0xFD20   // header preparazione (arancio)
+#define C_H_CAL   0xB17F   // header pompe/calibra (viola)
+#define C_H_SET   0x4C7F   // header setup menu (blu)
+#define C_H_LUC   0xFE00   // header luci (oro)
 
 // ─── PORTRAIT 240×320 ───────────────────────────────────────
 #define SW 240
@@ -414,8 +421,8 @@ void drawSm(int x, int y, int w, int h,
   tft.print(lbl);
 }
 
-void hdr(const char* t) {
-  tft.fillRect(0, 0, SW, 32, C_HDR);
+void hdr(const char* t, uint16_t col = C_HDR) {
+  tft.fillRect(0, 0, SW, 32, col);
   tft.setTextSize(2); tft.setTextColor(C_BG);
   tft.setCursor(8, 8); tft.print(t);
 }
@@ -476,7 +483,7 @@ void showMain() {
 void showSetup() {
   scr = S_SETUP;
   tft.fillScreen(C_BG);
-  hdr("SETUP BOTTIGLIE");
+  hdr("SETUP BOTTIGLIE", C_H_BOT);
   backBtn();
 
   char buf[18];
@@ -514,7 +521,7 @@ void showSetup() {
 void showSelect() {
   scr = S_SELECT;
   tft.fillScreen(C_BG);
-  hdr("SELEZIONA");
+  hdr("SELEZIONA", C_H_SEL);
   backBtn();
 
   if (scroll == 0) {
@@ -560,7 +567,7 @@ void showSelect() {
 void showDrinks() {
   scr = S_DRINKS;
   tft.fillScreen(C_BG);
-  hdr("DRINK MENU");
+  hdr("DRINK MENU", C_H_DRK);
   backBtn();
 
   filterDrinks();
@@ -599,7 +606,7 @@ void showDetail(uint8_t d) {
   tft.fillScreen(C_BG);
   char buf[18]; dname(d, buf);
   buf[15] = 0;
-  hdr(buf);
+  hdr(buf, C_H_DRK);
   backBtn();
 
   uint16_t tot = 0;
@@ -715,9 +722,9 @@ void drawQuote(uint8_t idx) {
     tft.setCursor((SW - tw) / 2, 236);
     tft.print(full);
   } else {
-    int sp = 12;
+    int sp = 13;
     while (sp > 1 && full[sp] != ' ') sp--;
-    if (sp <= 1) sp = 12;
+    if (sp <= 1) sp = 13;
     char line1[16];
     strncpy(line1, full, sp); line1[sp] = 0;
     tft.getTextBounds(line1, 0, 0, &bx, &by, &tw, &th);
@@ -734,7 +741,7 @@ void drawQuote(uint8_t idx) {
 void showDispensing(uint8_t d) {
   tft.fillScreen(C_BG);
   char buf[18]; dname(d, buf);
-  hdr("PREPARAZIONE");
+  hdr("PREPARAZIONE", C_H_MIX);
 
   for (uint8_t i = 0; buf[i]; i++) buf[i] = toupper(buf[i]);
   tft.setTextSize(2); tft.setTextColor(C_HDR);
@@ -793,7 +800,7 @@ void updateBar(uint8_t pct, const char* ingr) {
 void showCalib() {
   scr = S_CALIB;
   tft.fillScreen(C_BG);
-  hdr("POMPE");
+  hdr("POMPE", C_H_CAL);
   backBtn();
 
   char buf[18];
@@ -828,7 +835,7 @@ void showCalibP(uint8_t p) {
   scr = S_CALIB_P;
   tft.fillScreen(C_BG);
   char t[24]; sprintf(t, "CALIBRA P%d", p + 1);
-  hdr(t);
+  hdr(t, C_H_CAL);
   backBtn();
 
   tft.setTextSize(1); tft.setTextColor(C_DIM);
@@ -851,7 +858,7 @@ void showCalibP(uint8_t p) {
 void showSetupMenu() {
   scr = S_SETUP_MENU;
   tft.fillScreen(C_BG);
-  hdr("SETUP");
+  hdr("SETUP", C_H_SET);
   backBtn();
 
   #if USE_TOUCH
@@ -867,7 +874,7 @@ void showSetupMenu() {
 void showLights() {
   scr = S_LIGHTS;
   tft.fillScreen(C_BG);
-  hdr("LUCI");
+  hdr("LUCI", C_H_LUC);
   backBtn();
 
   for (uint8_t i = 0; i < NUM_POS; i++) {
@@ -904,7 +911,7 @@ float tubeVolumeMl(float lengthCm) {
 
 void runTubesProgress(const char* title, bool onlyAssigned, float lengthCm) {
   tft.fillScreen(C_BG);
-  hdr(title);
+  hdr(title, C_H_CAL);
 
   float vol = tubeVolumeMl(lengthCm);
 
