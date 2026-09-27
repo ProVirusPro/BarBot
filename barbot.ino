@@ -254,6 +254,9 @@ int  beerOfs = 0;
 unsigned long lastBeerAnim = 0;
 uint8_t  curQuote = 0;
 unsigned long lastQuoteTime = 0;
+uint8_t  dispIcon = 0;
+int      dispNameX;
+uint16_t dispNameW;
 
 unsigned long lastInput = 0;
 #define DEBOUNCE 300
@@ -650,20 +653,76 @@ const char* const QUOTES[NUM_QUOTES] PROGMEM = {
   q00,q01,q02,q03,q04,q05,q06,q07,q08,q09,q10,q11
 };
 
+// ─── Icone Decorative (rotazione) ────────────────────────────
+void drawDispIcon(uint8_t idx, int x, int y) {
+  tft.fillRect(x, y, 14, 16, C_BG);
+  uint16_t c = C_HDR;
+  switch (idx % 6) {
+    case 0: // bicchiere martini
+      tft.drawLine(x+1, y+1, x+7, y+9, c);
+      tft.drawLine(x+13, y+1, x+7, y+9, c);
+      tft.drawFastHLine(x, y+1, 14, c);
+      tft.drawFastVLine(x+7, y+9, 5, c);
+      tft.drawFastHLine(x+3, y+14, 8, c);
+      break;
+    case 1: // stella
+      tft.drawLine(x+7, y, x+7, y+14, c);
+      tft.drawLine(x+1, y+7, x+13, y+7, c);
+      tft.drawLine(x+3, y+2, x+11, y+12, c);
+      tft.drawLine(x+3, y+12, x+11, y+2, c);
+      break;
+    case 2: // cuore
+      tft.fillCircle(x+4, y+5, 3, c);
+      tft.fillCircle(x+10, y+5, 3, c);
+      tft.fillTriangle(x+1, y+6, x+13, y+6, x+7, y+14, c);
+      break;
+    case 3: // nota musicale
+      tft.fillCircle(x+4, y+11, 3, c);
+      tft.drawFastVLine(x+7, y+1, 11, c);
+      tft.drawFastHLine(x+7, y+1, 5, c);
+      tft.drawFastHLine(x+7, y+3, 5, c);
+      break;
+    case 4: // goccia
+      tft.fillCircle(x+7, y+10, 4, c);
+      tft.fillTriangle(x+3, y+9, x+11, y+9, x+7, y+1, c);
+      break;
+    case 5: // diamante
+      tft.fillTriangle(x+7, y, x+1, y+7, x+13, y+7, c);
+      tft.fillTriangle(x+7, y+14, x+1, y+7, x+13, y+7, c);
+      break;
+  }
+}
+
 void drawQuote(uint8_t idx) {
   char raw[36];
   strncpy_P(raw, (PGM_P)pgm_read_ptr(&QUOTES[idx % NUM_QUOTES]), 35);
   raw[35] = 0;
-  char buf[40];
-  buf[0] = '"'; strcpy(buf + 1, raw);
-  uint8_t l = strlen(buf); buf[l] = '"'; buf[l + 1] = 0;
+  char full[40];
+  snprintf(full, 39, "\"%s\"", raw);
 
-  tft.fillRect(0, 240, SW, 30, C_BG);
-  tft.setTextSize(1); tft.setTextColor(C_DIM);
+  tft.fillRect(0, 224, SW, 46, C_BG);
+  tft.setTextSize(2); tft.setTextColor(C_DIM);
   int16_t bx, by; uint16_t tw, th;
-  tft.getTextBounds(buf, 0, 0, &bx, &by, &tw, &th);
-  tft.setCursor((SW - tw) / 2, 248);
-  tft.print(buf);
+
+  int len = strlen(full);
+  if (len <= 19) {
+    tft.getTextBounds(full, 0, 0, &bx, &by, &tw, &th);
+    tft.setCursor((SW - tw) / 2, 240);
+    tft.print(full);
+  } else {
+    int sp = 18;
+    while (sp > 1 && full[sp] != ' ') sp--;
+    if (sp <= 1) sp = 18;
+    char line1[22];
+    strncpy(line1, full, sp); line1[sp] = 0;
+    tft.getTextBounds(line1, 0, 0, &bx, &by, &tw, &th);
+    tft.setCursor((SW - tw) / 2, 228);
+    tft.print(line1);
+    const char* line2 = full + sp + 1;
+    tft.getTextBounds(line2, 0, 0, &bx, &by, &tw, &th);
+    tft.setCursor((SW - tw) / 2, 250);
+    tft.print(line2);
+  }
 }
 
 // ─── Schermata Erogazione ────────────────────────────────────
@@ -671,15 +730,24 @@ void showDispensing(uint8_t d) {
   tft.fillScreen(C_BG);
   char buf[18]; dname(d, buf);
   hdr("PREPARAZIONE");
-  tft.setTextSize(2); tft.setTextColor(C_HDR);
-  tft.setCursor(14, 48); tft.print(buf);
 
-  // barra moderna: sfondo scuro incassato + bordo teal
+  for (uint8_t i = 0; buf[i]; i++) buf[i] = toupper(buf[i]);
+  tft.setTextSize(2); tft.setTextColor(C_HDR);
+  int16_t bx, by; uint16_t tw, th;
+  tft.getTextBounds(buf, 0, 0, &bx, &by, &tw, &th);
+  dispNameX = (SW - tw) / 2;
+  dispNameW = tw;
+  tft.setCursor(dispNameX, 48);
+  tft.print(buf);
+
+  dispIcon = 0;
+  drawDispIcon(0, dispNameX - 18, 48);
+  drawDispIcon(0, dispNameX + dispNameW + 4, 48);
+
   tft.fillRoundRect(14, 110, 212, 36, 8, 0x1082);
   tft.drawRoundRect(14, 110, 212, 36, 8, C_ACC);
   tft.drawRoundRect(15, 111, 210, 34, 7, 0x1863);
 
-  // citazione iniziale
   curQuote = (uint8_t)(millis() % NUM_QUOTES);
   lastQuoteTime = millis();
   drawQuote(curQuote);
@@ -705,11 +773,14 @@ void updateBar(uint8_t pct, const char* ingr) {
   tft.setTextSize(1); tft.setTextColor(C_DIM);
   tft.setCursor(14, 200); tft.print("Erogando: "); tft.print(ingr);
 
-  // rotazione citazioni ogni 4 sec
+  // rotazione citazioni e icone ogni 4 sec
   if (millis() - lastQuoteTime > 4000) {
     lastQuoteTime = millis();
     curQuote = (curQuote + 1) % NUM_QUOTES;
     drawQuote(curQuote);
+    dispIcon = (dispIcon + 1) % 6;
+    drawDispIcon(dispIcon, dispNameX - 18, 48);
+    drawDispIcon(dispIcon, dispNameX + dispNameW + 4, 48);
   }
 }
 
