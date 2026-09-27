@@ -244,9 +244,14 @@ int  calPump   = -1;
 enum Scr {
   S_MAIN, S_SETUP, S_SELECT,
   S_DRINKS, S_DETAIL, S_DISPENSING,
-  S_CALIB, S_CALIB_P
+  S_CALIB, S_CALIB_P,
+  S_SETUP_MENU, S_LIGHTS
 };
 Scr scr = S_MAIN;
+
+bool ledManual[NUM_POS];
+int  beerOfs = 0;
+unsigned long lastBeerAnim = 0;
 
 unsigned long lastInput = 0;
 #define DEBOUNCE 300
@@ -426,25 +431,39 @@ void toast(const char* msg) {
 //  SCHERMATE  (portrait 240×320)
 // ═════════════════════════════════════════════════════════════
 
+// ─── Icona Birra Animata ─────────────────────────────────────
+void drawBeer(int x, int y) {
+  tft.fillRoundRect(x, y + 10, 22, 30, 3, 0xFDE0);
+  tft.drawRoundRect(x, y + 10, 22, 30, 3, 0xC460);
+  tft.fillCircle(x + 3,  y + 10, 5, C_TXT);
+  tft.fillCircle(x + 11, y + 7,  6, C_TXT);
+  tft.fillCircle(x + 19, y + 10, 5, C_TXT);
+  tft.fillRoundRect(x + 21, y + 15, 8, 16, 3, 0xC460);
+  tft.fillRoundRect(x + 23, y + 18, 6, 10, 2, C_BG);
+}
+
 // ─── Menu Principale ─────────────────────────────────────────
 void showMain() {
   scr = S_MAIN;
   tft.fillScreen(C_BG);
 
-  tft.setTextSize(3); tft.setTextColor(C_HDR);
-  tft.setCursor(42, 30); tft.print("BARBOT");
+  tft.setTextSize(4); tft.setTextColor(C_HDR);
+  tft.setCursor(8, 16); tft.print("BARBOT");
+
+  beerOfs = 0; lastBeerAnim = millis();
+  drawBeer(170, 10);
 
   tft.setTextSize(1); tft.setTextColor(C_DIM);
-  tft.setCursor(50, 62); tft.print("Cocktail Mixer v1.0");
+  tft.setCursor(38, 54); tft.print("Cocktail Mixer v1.0");
 
   #if USE_TOUCH
     drawBtn(20,  95, 200, 50, "Setup Bottiglie");
     drawBtn(20, 160, 200, 50, "Drink");
-    drawBtn(20, 225, 200, 50, "Setup Pompe");
+    drawBtn(20, 225, 200, 50, "Setup");
   #else
     drawBtn(20,  95, 200, 50, "Setup Bottiglie", C_BTN, cursor==0);
     drawBtn(20, 160, 200, 50, "Drink",           C_BTN, cursor==1);
-    drawBtn(20, 225, 200, 50, "Setup Pompe",     C_BTN, cursor==2);
+    drawBtn(20, 225, 200, 50, "Setup",            C_BTN, cursor==2);
   #endif
 }
 
@@ -457,10 +476,10 @@ void showSetup() {
 
   char buf[18];
   for (uint8_t i = 0; i < NUM_POS; i++) {
-    int y = 42 + i * 36;
+    int y = 38 + i * 40;
 
     tft.setTextSize(1); tft.setTextColor(C_ACC);
-    tft.setCursor(5, y + 7);
+    tft.setCursor(5, y + 10);
     tft.print(i + 1); tft.print(':');
 
     bname(bottles[i], buf);
@@ -470,17 +489,17 @@ void showSetup() {
     #else
       bool s = false;
     #endif
-    drawSm(22, y, 170, 26, buf, bg, s);
+    drawBtn(22, y, 172, 32, buf, bg, s);
 
     uint16_t lc = (bottles[i] != 0xFF) ? C_GRN : 0x4208;
-    tft.fillCircle(216, y + 13, 8, lc);
-    tft.drawCircle(216, y + 13, 8, C_ACC);
+    tft.fillCircle(216, y + 16, 8, lc);
+    tft.drawCircle(216, y + 16, 8, C_ACC);
   }
 
   #if !USE_TOUCH
-    drawSm(60, 268, 120, 28, "SALVA", C_GRN, cursor == NUM_POS);
+    drawBtn(40, 280, 160, 32, "SALVA", C_GRN, cursor == NUM_POS);
   #else
-    drawSm(60, 268, 120, 28, "SALVA", C_GRN);
+    drawBtn(40, 280, 160, 32, "SALVA", C_GRN);
   #endif
 }
 
@@ -638,7 +657,7 @@ void updateBar(uint8_t pct, const char* ingr) {
 void showCalib() {
   scr = S_CALIB;
   tft.fillScreen(C_BG);
-  hdr("SETUP POMPE");
+  hdr("POMPE");
   backBtn();
 
   char buf[18];
@@ -690,6 +709,52 @@ void showCalibP(uint8_t p) {
   drawBtn(10,  210, 105, 36, "+ 0.05");
   drawBtn(125, 210, 105, 36, "- 0.05");
   drawBtn(30,  264, 180, 34, "SALVA", C_GRN);
+}
+
+// ─── Sotto-menu Setup ────────────────────────────────────────
+void showSetupMenu() {
+  scr = S_SETUP_MENU;
+  tft.fillScreen(C_BG);
+  hdr("SETUP");
+  backBtn();
+
+  #if USE_TOUCH
+    drawBtn(20, 100, 200, 50, "Pompe");
+    drawBtn(20, 170, 200, 50, "Luci");
+  #else
+    drawBtn(20, 100, 200, 50, "Pompe", C_BTN, cursor==0);
+    drawBtn(20, 170, 200, 50, "Luci",  C_BTN, cursor==1);
+  #endif
+}
+
+// ─── Controllo Luci ──────────────────────────────────────────
+void showLights() {
+  scr = S_LIGHTS;
+  tft.fillScreen(C_BG);
+  hdr("LUCI");
+  backBtn();
+
+  for (uint8_t i = 0; i < NUM_POS; i++) {
+    int y = 42 + i * 36;
+    bool on = (digitalRead(PIN_LED[i]) == LOW);
+    char lbl[14];
+    sprintf(lbl, "LED %d  %s", i + 1, on ? "ON" : "OFF");
+    uint16_t bg = on ? C_GRN : C_BTN;
+    #if !USE_TOUCH
+      bool s = (cursor == i);
+    #else
+      bool s = false;
+    #endif
+    drawBtn(20, y, 200, 28, lbl, bg, s);
+  }
+
+  #if !USE_TOUCH
+    drawSm(6,   262, 112, 28, "Tutte ON",  C_GRN, cursor == NUM_POS);
+    drawSm(122, 262, 112, 28, "Tutte OFF", C_RED, cursor == NUM_POS + 1);
+  #else
+    drawSm(6,   262, 112, 28, "Tutte ON",  C_GRN);
+    drawSm(122, 262, 112, 28, "Tutte OFF", C_RED);
+  #endif
 }
 
 // ═════════════════════════════════════════════════════════════
@@ -883,19 +948,19 @@ void handleTouch() {
   switch (scr) {
 
   case S_MAIN:
-    if (hit(tx,ty,20, 95,200,50)) { scroll=0; showSetup();  return; }
-    if (hit(tx,ty,20,160,200,50)) { scroll=0; showDrinks(); return; }
-    if (hit(tx,ty,20,225,200,50)) { showCalib();             return; }
+    if (hit(tx,ty,20, 95,200,50)) { scroll=0; showSetup();     return; }
+    if (hit(tx,ty,20,160,200,50)) { scroll=0; showDrinks();    return; }
+    if (hit(tx,ty,20,225,200,50)) { showSetupMenu();           return; }
     break;
 
   case S_SETUP:
     if (hit(tx,ty,196,4,40,24)) { showMain(); return; }
     for (uint8_t i = 0; i < NUM_POS; i++) {
-      if (hit(tx,ty,22, 42 + i*36, 170, 26)) {
+      if (hit(tx,ty,22, 38 + i*40, 172, 32)) {
         selPos = i; scroll = 0; showSelect(); return;
       }
     }
-    if (hit(tx,ty,60,268,120,28)) {
+    if (hit(tx,ty,40,280,160,32)) {
       saveEE(); ledsBase(); toast("Salvato!"); showSetup();
     }
     break;
@@ -954,7 +1019,7 @@ void handleTouch() {
     break;
 
   case S_CALIB:
-    if (hit(tx,ty,196,4,40,24)) { showMain(); return; }
+    if (hit(tx,ty,196,4,40,24)) { showSetupMenu(); return; }
     for (uint8_t i = 0; i < NUM_POS; i++) {
       if (hit(tx,ty,6, 42 + i*36, 228, 28)) {
         calPump = i; showCalibP(i); return;
@@ -985,6 +1050,30 @@ void handleTouch() {
     if (hit(tx,ty,30,264,180,34))  { saveEE(); toast("Salvato!"); showCalibP(calPump); }
     break;
 
+  case S_SETUP_MENU:
+    if (hit(tx,ty,196,4,40,24)) { showMain(); return; }
+    if (hit(tx,ty,20,100,200,50)) { showCalib();  return; }
+    if (hit(tx,ty,20,170,200,50)) { showLights(); return; }
+    break;
+
+  case S_LIGHTS:
+    if (hit(tx,ty,196,4,40,24)) { showSetupMenu(); return; }
+    for (uint8_t i = 0; i < NUM_POS; i++) {
+      if (hit(tx,ty,20, 42 + i*36, 200, 28)) {
+        if (digitalRead(PIN_LED[i]) == LOW) ledOff(i); else ledOn(i);
+        showLights(); return;
+      }
+    }
+    if (hit(tx,ty,6,262,112,28)) {
+      for (uint8_t i = 0; i < NUM_POS; i++) ledOn(i);
+      showLights(); return;
+    }
+    if (hit(tx,ty,122,262,112,28)) {
+      for (uint8_t i = 0; i < NUM_POS; i++) ledOff(i);
+      showLights(); return;
+    }
+    break;
+
   default: break;
   }
 }
@@ -1007,7 +1096,7 @@ void handleButtons() {
     if (e == BT_OK) {
       if (cursor==0) { scroll=0; cursor=0; maxCursor=NUM_POS; showSetup(); }
       if (cursor==1) { scroll=0; cursor=0; showDrinks(); }
-      if (cursor==2) { cursor=0; maxCursor=NUM_POS-1; showCalib(); }
+      if (cursor==2) { cursor=0; maxCursor=1; showSetupMenu(); }
     }
     break;
 
@@ -1087,6 +1176,34 @@ void handleButtons() {
     if (e == BT_OK)   { saveEE(); toast("Salvato!"); showCalibP(calPump); }
     break;
 
+  case S_SETUP_MENU:
+    if (e == BT_UP)   { cursor=(cursor+1)%2; showSetupMenu(); }
+    if (e == BT_DOWN) { cursor=(cursor+1)%2; showSetupMenu(); }
+    if (e == BT_OK) {
+      if (cursor==0) { cursor=0; maxCursor=NUM_POS+1; showCalib(); }
+      if (cursor==1) { cursor=0; maxCursor=NUM_POS+1; showLights(); }
+    }
+    break;
+
+  case S_LIGHTS: {
+    uint8_t total = NUM_POS + 2;
+    if (e == BT_UP)   { cursor=(cursor+total-1)%total; showLights(); }
+    if (e == BT_DOWN) { cursor=(cursor+1)%total;       showLights(); }
+    if (e == BT_OK) {
+      if (cursor < NUM_POS) {
+        if (digitalRead(PIN_LED[cursor]) == LOW) ledOff(cursor); else ledOn(cursor);
+        showLights();
+      } else if (cursor == NUM_POS) {
+        for (uint8_t i=0;i<NUM_POS;i++) ledOn(i);
+        showLights();
+      } else {
+        for (uint8_t i=0;i<NUM_POS;i++) ledOff(i);
+        showLights();
+      }
+    }
+    break;
+  }
+
   default: break;
   }
 }
@@ -1125,11 +1242,12 @@ void setup() {
   ledsBase();
 
   // splash screen
-  tft.setTextSize(3); tft.setTextColor(C_HDR);
-  tft.setCursor(42, 100); tft.print("BARBOT");
+  tft.setTextSize(4); tft.setTextColor(C_HDR);
+  tft.setCursor(8, 90); tft.print("BARBOT");
+  drawBeer(170, 84);
   tft.setTextSize(1); tft.setTextColor(C_DIM);
-  tft.setCursor(45, 140); tft.print("Cocktail Mixer System");
-  tft.setCursor(70, 170); tft.print("Avvio...");
+  tft.setCursor(38, 135); tft.print("Cocktail Mixer System");
+  tft.setCursor(70, 160); tft.print("Avvio...");
   ledChase(2);
   delay(1000);
 
@@ -1149,4 +1267,17 @@ void loop() {
   #else
     handleButtons();
   #endif
+
+  if (scr == S_MAIN) {
+    unsigned long now = millis();
+    if (now - lastBeerAnim >= 120) {
+      lastBeerAnim = now;
+      int newOfs = (int)(sin(now / 400.0) * 5);
+      if (newOfs != beerOfs) {
+        tft.fillRect(160, 0, 60, 60, C_BG);
+        beerOfs = newOfs;
+        drawBeer(170 + beerOfs, 10);
+      }
+    }
+  }
 }
